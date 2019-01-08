@@ -1,0 +1,1 @@
+python calc_rating.py

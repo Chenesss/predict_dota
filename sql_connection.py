@@ -1,5 +1,6 @@
 import pyodbc
 from dota_objects import dota_match
+from datetime import datetime
 
 #server = "DESKTOP-A5IJFLQ"
 server = "localhost"
@@ -15,7 +16,7 @@ class sql:
 		except pyodbc.Error as err:
 			print(f"Something went wrong and unable to establish SQL connection")
 			if err.args[0] == '28000':
-				error_msg("Login Failed for user")
+				print("Login Failed for user")
 			else:
 				raise
 		
@@ -30,8 +31,13 @@ class sql:
 		else:
 			print("Match not yet in system")
 			query = f"insert into match (tournament_name, BO, datetime, team1_name, team2_name, team1_odds, team2_odds, team1_result, team2_result) values ('{match_data.tournament}', '{match_data.game_format}', CAST('{match_data.date_time}' as datetime), '{match_data.team1}', '{match_data.team2}', {match_data.t1_odds}, {match_data.t2_odds}, {match_data.t1_score}, {match_data.t2_score})"
-
+		#print(query)
 		self.cursor.execute(query)
+		self.cursor.commit()
+
+	def processed_match(self, match_id):
+		currentDT = datetime.now()
+		self.cursor.execute(f"update match set processedat = CAST('{currentDT.strftime('%Y-%m-%d %H:%M:%S')}' as datetime) where id = {match_id}")
 		self.cursor.commit()
 
 	def match_exist(self, match_data):
@@ -79,6 +85,7 @@ class sql:
 		return self.cursor.fetchall()
 
 	def get_team_rating(self, team):
+		self.team_validation(team)
 		query = f"select * from team where name = '{team}'"
 		self.cursor.execute(query)
 		results = self.cursor.fetchall()
@@ -86,6 +93,11 @@ class sql:
 			return results[0].rating
 		else:
 			return "None"
+
+	def update_team_rating(self, team, team_rating):
+		query = f"update team set rating = {team_rating} where name = '{team}'"
+		self.cursor.execute(query)
+		self.cursor.commit()
 
 	def get_all_matches(self, processed=None):
 		if processed == True:
@@ -97,9 +109,6 @@ class sql:
 
 		self.cursor.execute(query)
 		return self.cursor.fetchall()
-
-
-
 
 
 

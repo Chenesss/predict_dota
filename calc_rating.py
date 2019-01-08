@@ -1,20 +1,6 @@
 from sql_connection import sql
+from datetime import datetime
 
-def find_winner(self):
-		if t1_score > t2_score:
-			return self.team1
-		elif t1_score < t2_score:
-			return self.team2
-		else:
-			return None
-
-def find_loser(self):
-	if t1_score < t2_score:
-		return self.team1
-	elif t1_score > t2_score:
-		return self.team2
-	else:
-		return None
 
 dota_db = sql()
 
@@ -29,21 +15,18 @@ for match in all_matches:
 		loser = match.team1_name
 		winner = match.team2_name
 	else:
-		winner = None
-		loser = None
-
+		print("Draw")
+		dota_db.processed_match(match.ID)
+		continue
 
 	winner_rating = dota_db.get_team_rating(winner)
 	loser_rating = dota_db.get_team_rating(loser)
 
-	# print(f'team1 rating is {winner_rating}')
-	# print(f'team2 rating is {loser_rating}')
-
 	try:
-		team1_rating = int(winner_rating)
-		team2_rating = int(loser_rating)
+		winner_rating = int(winner_rating)
+		loser_rating = int(loser_rating)
 	except ValueError:
-		print(f"{winner_rating} or {loser_rating} team not found")
+		print(f"{match.team1_name} or {match.team2_name} team not found")
 		continue
 
 
@@ -52,18 +35,18 @@ for match in all_matches:
 	elif winner_rating <= loser_rating:
 		if (loser_rating - winner_rating) > 25:
 			rating_difference = loser_rating - winner_rating
-			adjustment = int(rating_difference/2)
+			adjustment = int(rating_difference/3)
 			winner_rating += adjustment
 			loser_rating -= adjustment
 		else:
 			winner_rating += 25
 			loser_rating -= 25
 
-	dota_db.cursor.execute(f"update team set rating = {winner_rating} where name = '{winner}'")
-	dota_db.cursor.execute(f"update team set rating = {loser_rating} where name = '{loser}'")
-	dota_db.cursor.commit()
+	dota_db.update_team_rating(winner, winner_rating)
+	dota_db.update_team_rating(loser, loser_rating)
 
-	print(f"Winner adjusted rating is {winner_rating}")
-	print(f"Loser adjusted rating is {loser_rating}")
+	print(f"Winner: {winner} adjusted rating is {winner_rating}")
+	print(f"Loser: {loser} adjusted rating is {loser_rating}")
 
+	dota_db.processed_match(match.ID)
 
